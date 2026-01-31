@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a14">
+    <title>Глот — Голосовой друг</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0a14;color:#fff;min-height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+        .debug-panel{background:#1a1a2e;padding:10px;font-size:11px;color:#888;border-bottom:1px solid #333;max-height:100px;overflow-y:auto}
+        .debug-line{margin:2px 0;padding:2px 0;border-bottom:1px solid #2a2a3a}
+        .debug-error{color:#f5576c}
+        .debug-success{color:#4CAF50}
+        .debug-warn{color:#FF9800}
+
+        .header{padding:15px;text-align:center;background:linear-gradient(180deg,#1a1a2e 0%,#0a0a14 100%);position:relative}
+        .avatar{width:80px;height:80px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:40px;transition:all 0.3s;box-shadow:0 0 25px rgba(102,126,234,0.4)}
+        .avatar.error{background:linear-gradient(135deg,#f5576c 0%,#c0392b 100%);animation:none}
+        .avatar.listening{animation:pulse 1s ease-in-out infinite;box-shadow:0 0 40px rgba(102,126,234,0.8)}
+        .avatar.speaking{animation:speakPulse 0.5s ease-in-out infinite}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+        @keyframes speakPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+        .status{font-size:11px;color:#667eea;text-transform:uppercase;letter-spacing:2px;margin-bottom:3px}
+        .status.error{color:#f5576c}
+        h1{font-size:24px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+        .chat{flex:1;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:12px}
+        .message{max-width:95%;padding:12px 16px;border-radius:18px;font-size:15px;line-height:1.6;animation:slideIn 0.3s ease;word-wrap:break-word}
+        @keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .message.glott{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);align-self:flex-start;border-bottom-left-radius:4px}
+        .message.user{background:#2d2d44;align-self:flex-end;border-bottom-right-radius:4px}
+        .message.error{background:#f5576c20;border:1px solid #f5576c;align-self:center;font-size:13px}
+        .message .time{font-size:10px;opacity:0.6;margin-top:6px}
+
+        .controls{padding:15px;background:#1a1a2e;border-top:1px solid #2d2d44}
+
+        .voice-btn{width:100%;padding:15px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border:none;border-radius:12px;color:#fff;font-size:16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+        .voice-btn:disabled{background:#333;color:#666;cursor:not-allowed}
+        .voice-btn.active{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);animation:pulse 2s infinite}
+
+        .input-area{display:flex;gap:10px;margin-bottom:10px}
+        .text-input{flex:1;padding:12px;background:#2d2d44;border:none;border-radius:12px;color:#fff;font-size:15px}
+        .send-btn{width:45px;height:45px;background:#667eea;border:none;border-radius:12px;color:#fff;font-size:18px;cursor:pointer}
+
+        .hint{text-align:center;color:#888;font-size:13px;margin-top:10px}
+        .hint.error{color:#f5576c}
+
+        .settings-btn{position:fixed;top:15px;right:15px;width:40px;height:40px;background:#2d2d44;border:none;border-radius:10px;color:#fff;font-size:18px;cursor:pointer;z-index:100}
+        .settings{position:fixed;top:0;right:-100%;width:85%;max-width:320px;height:100%;background:#1a1a2e;padding:70px 15px 15px;transition:right 0.3s;z-index:99;overflow-y:auto}
+        .settings.open{right:0}
+        .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);opacity:0;pointer-events:none;transition:opacity 0.3s;z-index:98}
+        .overlay.open{opacity:1;pointer-events:auto}
+
+        .setting-item{margin-bottom:15px}
+        .setting-item label{display:block;margin-bottom:6px;color:#888;font-size:13px}
+        .setting-item select,.setting-item input{width:100%;padding:10px;background:#2d2d44;border:none;border-radius:8px;color:#fff;font-size:14px}
+
+        .test-btn{width:100%;padding:10px;background:#4CAF5020;color:#4CAF50;border:1px solid #4CAF50;border-radius:8px;margin-top:10px;cursor:pointer;font-size:13px}
+
+        .wake-indicator{position:fixed;bottom:15px;left:15px;width:10px;height:10px;background:#333;border-radius:50%}
+        .wake-indicator.active{background:#4CAF50;box-shadow:0 0 10px #4CAF50}
+    </style>
+</head>
+<body>
+    <div class="debug-panel" id="debugPanel">
+        <div class="debug-line">🔍 Инициализация...</div>
+    </div>
+
+    <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
+    <div class="overlay" onclick="toggleSettings()"></div>
+
+    <div class="settings" id="settings">
+        <div class="setting-item">
+            <label>Голосовая активация</label>
+            <select id="activationWord" onchange="saveSettings()">
+                <option value="глот">"Глот"</option>
+                <option value="эй">"Эй"</option>
+                <option value="слышь">"Слышь"</option>
+                <option value="none" selected>Без слова (слушать всё)</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <label>Режим прослушивания</label>
+            <select id="listenMode" onchange="saveSettings()">
+                <option value="push">По кнопке (экономит батарею)</option>
+                <option value="always">Постоянно (всегда слушает)</option>
+            </select>
+        </div>
+        <button class="test-btn" onclick="testVoice()">🎤 Тест микрофона</button>
+        <button class="test-btn" onclick="testSpeech()">🔊 Тест озвучки</button>
+    </div>
+
+    <div class="header">
+        <div class="avatar" id="avatar">🐙</div>
+        <div class="status" id="status">загрузка...</div>
+        <h1>Глот</h1>
+    </div>
+
+    <div class="chat" id="chat"></div>
+
+    <div class="controls">
+        <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+            <span id="voiceIcon">🎤</span>
+            <span id="voiceText">Нажми и говори</span>
+        </button>
+
+        <div class="input-area">
+            <input type="text" class="text-input" id="textInput" placeholder="Или напиши здесь..." onkeypress="if(event.key==='Enter')sendText()">
+            <button class="send-btn" onclick="sendText()">➤</button>
+        </div>
+
+        <div class="hint" id="hint">Разрешите доступ к микрофону когда попросит</div>
+    </div>
+
+    <div class="wake-indicator" id="wakeIndicator"></div>
+
+<script>
+// === ДЕБАГ ===
+function log(msg, type='info') {
+    const panel = document.getElementById('debugPanel');
+    const line = document.createElement('div');
+    line.className = 'debug-line debug-' + type;
+    line.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+    panel.appendChild(line);
+    panel.scrollTop = panel.scrollHeight;
+    console.log('[' + type + ']', msg);
+}
+
+// === ПРОВЕРКА ПОДДЕРЖКИ ===
+const support = {
+    speechRecognition: !!(window.SpeechRecognition || window.webkitSpeechRecognition),
+    speechSynthesis: !!window.speechSynthesis,
+    wakeLock: !!navigator.wakeLock,
+    https: location.protocol === 'https:' || location.hostname === 'localhost'
+};
+
+log('HTTPS: ' + (support.https ? 'да' : 'нет'), support.https ? 'success' : 'warn');
+log('Распознавание речи: ' + (support.speechRecognition ? 'да' : 'нет'), support.speechRecognition ? 'success' : 'error');
+log('Озвучка: ' + (support.speechSynthesis ? 'да' : 'нет'), support.speechSynthesis ? 'success' : 'error');
+
+// === СОСТОЯНИЕ ===
+let recognition = null;
+let isListening = false;
+let isSpeaking = false;
+let config = {
+    activationWord: localStorage.getItem('activationWord') || 'none',
+    listenMode: localStorage.getItem('listenMode') || 'push'
+};
+
+// === ИНИЦИАЛИЗАЦИЯ ===
+function init() {
+    updateUI();
+
+    if (!support.speechRecognition) {
+        showError('Ваш браузер не поддерживает распознавание речи. Используйте Chrome на Android или Safari на iOS');
+        document.getElementById('voiceBtn').disabled = true;
+        return;
+    }
+
+    if (!support.https) {
+        showError('Голосовые функции требуют HTTPS. Откройте через GitHub Pages, а не локально.');
+    }
+
+    initSpeech();
+
+    // Приветствие текстом (если голос не работает)
+    setTimeout(() => {
+        addMessage('Привет! Я Глот. Нажми кнопку 🎤 и говори. Если голос не работает — пиши сюда!', false);
+    }, 500);
+}
+
+function showError(msg) {
+    log(msg, 'error');
+    document.getElementById('status').textContent = 'ошибка';
+    document.getElementById('status').classList.add('error');
+    document.getElementById('avatar').classList.add('error');
+    document.getElementById('hint').textContent = msg;
+    document.getElementById('hint').classList.add('error');
+
+    const chat = document.getElementById('chat');
+    const error = document.createElement('div');
+    error.className = 'message error';
+    error.textContent = '⚠️ ' + msg;
+    chat.appendChild(error);
+}
+
+// === ГОЛОСОВОЙ ВВОД ===
+function initSpeech() {
+    try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+
+        recognition.lang = 'ru-RU';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            isListening = true;
+            log('Начало прослушивания', 'success');
+            updateVoiceUI();
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            log('Конец прослушивания');
+            updateVoiceUI();
+
+            // Автоперезапуск если режим "всегда"
+            if (config.listenMode === 'always') {
+                setTimeout(() => recognition.start(), 500);
+            }
+        };
+
+        recognition.onresult = (e) => {
+            const text = e.results[0][0].transcript;
+            log('Распознано: ' + text, 'success');
+            handleInput(text);
+        };
+
+        recognition.onerror = (e) => {
+            log('Ошибка: ' + e.error, 'error');
+            isListening = false;
+            updateVoiceUI();
+
+            if (e.error === 'not-allowed') {
+                showError('Микрофон заблокирован. Разрешите доступ в настройках браузера.');
+            } else if (e.error === 'no-speech') {
+                addMessage('Не расслышал... Повтори?', false);
+            }
+        };
+
+        log('Распознавание инициализировано', 'success');
+        document.getElementById('status').textContent = 'готов';
+
+    } catch (e) {
+        log('Ошибка инициализации: ' + e.message, 'error');
+        showError('Не удалось запустить распознавание: ' + e.message);
+    }
+}
+
+function toggleVoice() {
+    if (!recognition) {
+        showError('Распознавание не доступно');
+        return;
+    }
+
+    if (isListening) {
+        recognition.stop();
+    } else {
+        recognition.start();
+    }
+}
+
+function updateVoiceUI() {
+    const btn = document.getElementById('voiceBtn');
+    const icon = document.getElementById('voiceIcon');
+    const text = document.getElementById('voiceText');
+    const avatar = document.getElementById('avatar');
+    const status = document.getElementById('status');
+
+    if (isListening) {
+        btn.classList.add('active');
+        icon.textContent = '👂';
+        text.textContent = 'Слушаю...';
+        avatar.classList.add('listening');
+        status.textContent = 'слушаю';
+    } else {
+        btn.classList.remove('active');
+        icon.textContent = '🎤';
+        text.textContent = config.listenMode === 'always' ? 'Слушаю всегда' : 'Нажми и говори';
+        avatar.classList.remove('listening');
+        status.textContent = 'готов';
+    }
+}
+
+// === ОБРАБОТКА ВВОДА ===
+function handleInput(text) {
+    addMessage(text, true);
+
+    // Проверка активационного слова
+    if (config.activationWord !== 'none') {
+        if (!text.toLowerCase().includes(config.activationWord)) {
+            log('Активационное слово не detected');
+            return; // Игнорируем если нет слова активации
+        }
+        log('Активация по слову: ' + config.activationWord, 'success');
+    }
+
+    // Генерация ответа
+    setTimeout(() => {
+        const response = generateResponse(text);
+        speak(response);
+    }, 300);
+}
+
+function generateResponse(text) {
+    const lower = text.toLowerCase();
+
+    if (lower.includes('привет')) return 'Привет! Слышу тебя отлично 👋';
+    if (lower.includes('как дела')) return 'Работаю! Голос функционирует?';
+    if (lower.includes('тест')) return 'Тест пройден! Я слышу и говорю.';
+    if (lower.includes('работаешь')) return 'Да! Если ты это слышишь — всё работает!';
+    if (lower.includes('пока')) return 'Пока! Обращайся голосом 😉';
+
+    return 'Понял тебя! Голосовая связь работает нормально.';
+}
+
+// === ОЗВУЧКА ===
+function speak(text) {
+    addMessage(text, false);
+
+    if (!support.speechSynthesis) {
+        log('Озвучка не поддерживается', 'error');
+        return;
+    }
+
+    isSpeaking = true;
+    document.getElementById('avatar').classList.add('speaking');
+    document.getElementById('status').textContent = 'говорит';
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ru-RU';
+    u.rate = 1;
+    u.pitch = 1;
+
+    u.onend = () => {
+        isSpeaking = false;
+        document.getElementById('avatar').classList.remove('speaking');
+        document.getElementById('status').textContent = 'готов';
+    };
+
+    u.onerror = (e) => {
+        log('Ошибка озвучки: ' + e.error, 'error');
+        isSpeaking = false;
+    };
+
+    speechSynthesis.speak(u);
+    log('Говорю: ' + text);
+}
+
+// === ТЕКСТОВЫЙ ВВОД (запасной) ===
+function sendText() {
+    const input = document.getElementById('textInput');
+    const text = input.value.trim();
+    if (text) {
+        handleInput(text);
+        input.value = '';
+    }
+}
+
+// === UI ===
+function addMessage(text, isUser) {
+    const chat = document.getElementById('chat');
+    const msg = document.createElement('div');
+    msg.className = 'message ' + (isUser ? 'user' : 'glott');
+    msg.textContent = text;
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+// === ТЕСТЫ ===
+function testVoice() {
+    log('Запуск теста микрофона...');
+    if (!recognition) {
+        showError('Распознавание не инициализировано');
+        return;
+    }
+
+    recognition.start();
+    setTimeout(() => {
+        if (isListening) {
+            addMessage('🎤 Тест: скажите что-нибудь...', false);
+        }
+    }, 500);
+}
+
+function testSpeech() {
+    log('Тест озвучки...');
+    speak('Тест пройден! Если вы слышите этот текст, озвучка работает.');
+}
+
+// === НАСТРОЙКИ ===
+function toggleSettings() {
+    document.getElementById('settings').classList.toggle('open');
+    document.querySelector('.overlay').classList.toggle('open');
+}
+
+function saveSettings() {
+    config.activationWord = document.getElementById('activationWord').value;
+    config.listenMode = document.getElementById('listenMode').value;
+    localStorage.setItem('activationWord', config.activationWord);
+    localStorage.setItem('listenMode', config.listenMode);
+    updateUI();
+}
+
+function updateUI() {
+    document.getElementById('activationWord').value = config.activationWord;
+    document.getElementById('listenMode').value = config.listenMode;
+    updateVoiceUI();
+}
+
+// === СТАРТ ===
+window.onload = init;
+
+// === ОБРАБОТКА ОШИБОК ===
+window.onerror = (msg, url, line) => {
+    log('JS Error: ' + msg + ' (line ' + line + ')', 'error');
+};
+</script>
+</body>
+</html>
