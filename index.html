@@ -4,110 +4,192 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0a0a14">
-    <meta name="description" content="Глот v7.1 - Голосовой помощник с ИИ">
-    <title>Глот v7.1</title>
+    <meta name="description" content="Глот v7.2 - Умный голосовой помощник">
+    <title>Глот v7.2</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div class="offline-indicator" id="offlineIndicator">⚠️ Офлайн-режим</div>
+<body class="dark-theme">
+    <!-- Офлайн индикатор -->
+    <div class="offline-indicator" id="offlineIndicator">
+        <span>⚠️ Офлайн-режим</span>
+    </div>
+
+    <!-- Фоновые эффекты -->
     <div class="bg-effects" id="bgEffects"></div>
 
-    <button class="theme-btn" onclick="app.toggleTheme()" title="Тема">🌓</button>
-    <button class="settings-btn" onclick="app.toggleSettings()" title="Настройки">⚙️</button>
+    <!-- Кнопки управления -->
+    <button class="theme-btn" id="themeBtn" onclick="app.toggleTheme()" title="Сменить тему">🌓</button>
+    <button class="settings-btn" id="settingsBtn" onclick="app.toggleSettings()" title="Настройки">⚙️</button>
 
-    <div class="overlay" onclick="app.toggleSettings()"></div>
+    <!-- Оверлей для закрытия меню -->
+    <div class="overlay" id="overlay" onclick="app.toggleSettings()"></div>
 
-    <div class="settings" id="settings">
-        <div class="setting-category">
+    <!-- Панель настроек -->
+    <aside class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h2>⚙️ Настройки</h2>
+            <button class="close-settings" onclick="app.toggleSettings()">✕</button>
+        </div>
+
+        <!-- Характер -->
+        <div class="settings-section">
             <h3>🎭 Характер</h3>
             <div class="personality-grid">
-                <button class="personality-btn active" onclick="app.setPersonality('friend', this)">
-                    <span class="emoji">🐙</span>Друг
+                <button class="personality-btn active" data-personality="friend" onclick="app.setPersonality('friend')">
+                    <span class="p-emoji">🐙</span>
+                    <span class="p-name">Друг</span>
+                    <span class="p-desc">Дружелюбный и энергичный</span>
                 </button>
-                <button class="personality-btn" onclick="app.setPersonality('sarcastic', this)">
-                    <span class="emoji">🦑</span>Саркастик
+                <button class="personality-btn" data-personality="sarcastic" onclick="app.setPersonality('sarcastic')">
+                    <span class="p-emoji">🦑</span>
+                    <span class="p-name">Саркастик</span>
+                    <span class="p-desc">С иронией и остроумием</span>
                 </button>
-                <button class="personality-btn" onclick="app.setPersonality('wise', this)">
-                    <span class="emoji">🐢</span>Мудрец
+                <button class="personality-btn" data-personality="wise" onclick="app.setPersonality('wise')">
+                    <span class="p-emoji">🐢</span>
+                    <span class="p-name">Мудрец</span>
+                    <span class="p-desc">Философский и спокойный</span>
                 </button>
-                <button class="personality-btn" onclick="app.setPersonality('detective', this)">
-                    <span class="emoji">🕵️</span>Детектив
+                <button class="personality-btn" data-personality="detective" onclick="app.setPersonality('detective')">
+                    <span class="p-emoji">🕵️</span>
+                    <span class="p-name">Детектив</span>
+                    <span class="p-desc">Аналитический и внимательный</span>
                 </button>
             </div>
         </div>
 
-        <div class="setting-category">
+        <!-- Голос -->
+        <div class="settings-section">
             <h3>🎤 Голос</h3>
-            <div class="voice-presets">
-                <button class="voice-preset active" onclick="app.setVoice('intense', this)">⚡ Интенсивный</button>
-                <button class="voice-preset" onclick="app.setVoice('calm', this)">🌊 Спокойный</button>
-                <button class="voice-preset" onclick="app.setVoice('deep', this)">🎭 Глубокий</button>
-                <button class="voice-preset" onclick="app.setVoice('friendly', this)">☀️ Дружелюбный</button>
+            <div class="voice-list">
+                <button class="voice-btn-settings active" data-voice="intense" onclick="app.setVoice('intense')">
+                    <span class="v-icon">⚡</span>
+                    <div class="v-info">
+                        <span class="v-name">Интенсивный</span>
+                        <span class="v-desc">Мощный и чёткий</span>
+                    </div>
+                </button>
+                <button class="voice-btn-settings" data-voice="calm" onclick="app.setVoice('calm')">
+                    <span class="v-icon">🌊</span>
+                    <div class="v-info">
+                        <span class="v-name">Спокойный</span>
+                        <span class="v-desc">Мягкий и ровный</span>
+                    </div>
+                </button>
+                <button class="voice-btn-settings" data-voice="deep" onclick="app.setVoice('deep')">
+                    <span class="v-icon">🎭</span>
+                    <div class="v-info">
+                        <span class="v-name">Глубокий</span>
+                        <span class="v-desc">Весомый и серьёзный</span>
+                    </div>
+                </button>
+                <button class="voice-btn-settings" data-voice="friendly" onclick="app.setVoice('friendly')">
+                    <span class="v-icon">☀️</span>
+                    <div class="v-info">
+                        <span class="v-name">Дружелюбный</span>
+                        <span class="v-desc">Тёплый и светлый</span>
+                    </div>
+                </button>
             </div>
         </div>
 
-        <div class="setting-category">
+        <!-- Данные -->
+        <div class="settings-section">
             <h3>💾 Данные</h3>
-            <button class="action-btn" onclick="storage.export()">📥 Экспорт</button>
-            <button class="action-btn" onclick="storage.import()">📤 Импорт</button>
-            <button class="action-btn danger-btn" onclick="storage.clear()">🗑️ Очистить</button>
-        </div>
-    </div>
-
-    <div class="header">
-        <div class="avatar-container" id="avatarContainer">
-            <div class="avatar" id="avatar">🐙</div>
-            <div class="avatar-ring"></div>
-            <div class="emotion-particles" id="emotionParticles"></div>
-            <div class="mood-badge" id="moodBadge">😊</div>
-        </div>
-        <div class="status">
-            <span class="status-dot"></span>
-            <span id="statusText">онлайн</span>
-        </div>
-        <h1>Глот v7.1</h1>
-    </div>
-
-    <div class="chat" id="chat"></div>
-
-    <div class="game-container" id="gameContainer">
-        <div class="game-header">
-            <span>🎮 Игра активна</span>
-            <span id="gameScore">Счёт: 0</span>
-        </div>
-        <div id="gameContent"></div>
-    </div>
-
-    <div class="controls">
-        <div class="mode-tabs">
-            <button class="mode-tab active" data-mode="chat" onclick="app.setMode('chat')">💬 Чат</button>
-            <button class="mode-tab" data-mode="game" onclick="app.setMode('game')">🎮 Игра</button>
-        </div>
-
-        <div class="quick-actions">
-            <button class="quick-btn" onclick="app.quickCommand('переведи')">Переведи</button>
-            <button class="quick-btn" onclick="app.quickCommand('напомни')">Напомни</button>
-            <button class="quick-btn" onclick="app.quickCommand('игра')">Играть</button>
-            <button class="quick-btn" onclick="app.quickCommand('помоги')">Помощь</button>
-        </div>
-
-        <div class="input-area">
-            <input type="text" class="text-input" id="textInput" placeholder="Введите сообщение..." 
-                onkeypress="if(event.key==='Enter')app.sendText()" autocomplete="off" maxlength="500">
-            <button class="send-btn" onclick="app.sendText()">➤</button>
-        </div>
-
-        <div class="voice-container">
-            <button class="voice-btn" id="voiceBtn" onclick="voice.toggle()">🎤</button>
-            <div class="voice-waves">
-                <div class="wave"></div>
-                <div class="wave"></div>
-                <div class="wave"></div>
+            <div class="data-actions">
+                <button class="data-btn export" onclick="storage.export()">
+                    <span>📥</span> Экспорт данных
+                </button>
+                <button class="data-btn import" onclick="storage.import()">
+                    <span>📤</span> Импорт данных
+                </button>
+                <button class="data-btn clear" onclick="storage.clear()">
+                    <span>🗑️</span> Очистить всё
+                </button>
             </div>
         </div>
 
-        <div class="hint" id="hint">Нажмите 🎤 и говорите</div>
-    </div>
+        <div class="settings-footer">
+            <span>Глот v7.2</span>
+        </div>
+    </aside>
+
+    <!-- Главный контент -->
+    <main class="main-container">
+        <!-- Шапка -->
+        <header class="header">
+            <div class="avatar-wrapper" id="avatarContainer">
+                <div class="avatar-glow"></div>
+                <div class="avatar" id="avatar">🐙</div>
+                <div class="avatar-status" id="moodBadge">😊</div>
+                <div class="voice-waves" id="voiceWaves">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+            
+            <div class="header-info">
+                <div class="status-line">
+                    <span class="status-dot"></span>
+                    <span class="status-text" id="statusText">онлайн</span>
+                </div>
+                <h1 class="app-title">Глот <span class="version">v7.2</span></h1>
+                <p class="personality-label" id="personalityLabel">Режим: Друг</p>
+            </div>
+        </header>
+
+        <!-- Чат -->
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-messages" id="chat"></div>
+            
+            <!-- Игровая панель -->
+            <div class="game-panel" id="gameContainer">
+                <div class="game-header">
+                    <h3>🎮 Игра активна</h3>
+                    <span class="game-score" id="gameScore">Счёт: 0</span>
+                </div>
+                <div class="game-content" id="gameContent"></div>
+            </div>
+        </div>
+
+        <!-- Управление -->
+        <div class="controls">
+            <!-- Режимы -->
+            <div class="mode-switcher">
+                <button class="mode-btn active" data-mode="chat" onclick="app.setMode('chat')">
+                    <span>💬</span> Чат
+                </button>
+                <button class="mode-btn" data-mode="game" onclick="app.setMode('game')">
+                    <span>🎮</span> Игра
+                </button>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="quick-actions">
+                <button class="quick-chip" onclick="app.quickCommand('расскажи о себе')">👤 О себе</button>
+                <button class="quick-chip" onclick="app.quickCommand('погода')">🌤 Погода</button>
+                <button class="quick-chip" onclick="app.quickCommand('анекдот')">😄 Анекдот</button>
+                <button class="quick-chip" onclick="app.quickCommand('совет')">💡 Совет</button>
+                <button class="quick-chip" onclick="app.quickCommand('игра')">🎮 Играть</button>
+                <button class="quick-chip" onclick="app.quickCommand('помоги')">❓ Помощь</button>
+            </div>
+
+            <!-- Ввод -->
+            <div class="input-wrapper">
+                <div class="text-input-wrapper">
+                    <input type="text" id="textInput" placeholder="Напишите что-нибудь..." 
+                           maxlength="500" autocomplete="off">
+                    <button class="send-text-btn" onclick="app.sendText()">➤</button>
+                </div>
+                
+                <button class="voice-main-btn" id="voiceBtn" onclick="voice.toggle()">
+                    <span class="mic-icon">🎤</span>
+                    <span class="mic-text">Говорить</span>
+                </button>
+            </div>
+
+            <p class="input-hint" id="hint">Нажмите 🎤 для голосового ввода</p>
+        </div>
+    </main>
 
     <script src="storage.js"></script>
     <script src="voice.js"></script>
