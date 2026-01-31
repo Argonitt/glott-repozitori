@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a14">
+    <meta name="description" content="Глот v7.1 - Голосовой помощник с ИИ">
+    <title>Глот v7.1</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="offline-indicator" id="offlineIndicator">⚠️ Офлайн-режим</div>
+    <div class="bg-effects" id="bgEffects"></div>
+
+    <button class="theme-btn" onclick="app.toggleTheme()" title="Тема">🌓</button>
+    <button class="settings-btn" onclick="app.toggleSettings()" title="Настройки">⚙️</button>
+
+    <div class="overlay" onclick="app.toggleSettings()"></div>
+
+    <div class="settings" id="settings">
+        <div class="setting-category">
+            <h3>🎭 Характер</h3>
+            <div class="personality-grid">
+                <button class="personality-btn active" onclick="app.setPersonality('friend', this)">
+                    <span class="emoji">🐙</span>Друг
+                </button>
+                <button class="personality-btn" onclick="app.setPersonality('sarcastic', this)">
+                    <span class="emoji">🦑</span>Саркастик
+                </button>
+                <button class="personality-btn" onclick="app.setPersonality('wise', this)">
+                    <span class="emoji">🐢</span>Мудрец
+                </button>
+                <button class="personality-btn" onclick="app.setPersonality('detective', this)">
+                    <span class="emoji">🕵️</span>Детектив
+                </button>
+            </div>
+        </div>
+
+        <div class="setting-category">
+            <h3>🎤 Голос</h3>
+            <div class="voice-presets">
+                <button class="voice-preset active" onclick="app.setVoice('intense', this)">⚡ Интенсивный</button>
+                <button class="voice-preset" onclick="app.setVoice('calm', this)">🌊 Спокойный</button>
+                <button class="voice-preset" onclick="app.setVoice('deep', this)">🎭 Глубокий</button>
+                <button class="voice-preset" onclick="app.setVoice('friendly', this)">☀️ Дружелюбный</button>
+            </div>
+        </div>
+
+        <div class="setting-category">
+            <h3>💾 Данные</h3>
+            <button class="action-btn" onclick="storage.export()">📥 Экспорт</button>
+            <button class="action-btn" onclick="storage.import()">📤 Импорт</button>
+            <button class="action-btn danger-btn" onclick="storage.clear()">🗑️ Очистить</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="avatar-container" id="avatarContainer">
+            <div class="avatar" id="avatar">🐙</div>
+            <div class="avatar-ring"></div>
+            <div class="emotion-particles" id="emotionParticles"></div>
+            <div class="mood-badge" id="moodBadge">😊</div>
+        </div>
+        <div class="status">
+            <span class="status-dot"></span>
+            <span id="statusText">онлайн</span>
+        </div>
+        <h1>Глот v7.1</h1>
+    </div>
+
+    <div class="chat" id="chat"></div>
+
+    <div class="game-container" id="gameContainer">
+        <div class="game-header">
+            <span>🎮 Игра активна</span>
+            <span id="gameScore">Счёт: 0</span>
+        </div>
+        <div id="gameContent"></div>
+    </div>
+
+    <div class="controls">
+        <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="chat" onclick="app.setMode('chat')">💬 Чат</button>
+            <button class="mode-tab" data-mode="game" onclick="app.setMode('game')">🎮 Игра</button>
+        </div>
+
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="app.quickCommand('переведи')">Переведи</button>
+            <button class="quick-btn" onclick="app.quickCommand('напомни')">Напомни</button>
+            <button class="quick-btn" onclick="app.quickCommand('игра')">Играть</button>
+            <button class="quick-btn" onclick="app.quickCommand('помоги')">Помощь</button>
+        </div>
+
+        <div class="input-area">
+            <input type="text" class="text-input" id="textInput" placeholder="Введите сообщение..." 
+                onkeypress="if(event.key==='Enter')app.sendText()" autocomplete="off" maxlength="500">
+            <button class="send-btn" onclick="app.sendText()">➤</button>
+        </div>
+
+        <div class="voice-container">
+            <button class="voice-btn" id="voiceBtn" onclick="voice.toggle()">🎤</button>
+            <div class="voice-waves">
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+            </div>
+        </div>
+
+        <div class="hint" id="hint">Нажмите 🎤 и говорите</div>
+    </div>
+
+    <script src="storage.js"></script>
+    <script src="voice.js"></script>
+    <script src="games.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
