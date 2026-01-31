@@ -1,4 +1,3 @@
-// Хранилище данных с валидацией и обработкой ошибок
 const storage = {
     data: {
         personality: 'friend',
@@ -20,8 +19,8 @@ const storage = {
             this.data.reminders = this.safeGet('reminders', []);
             this.data.patterns = this.safeGet('patterns', {});
         } catch (e) {
-            console.error('Ошибка загрузки данных:', e);
-            this.resetToDefaults();
+            console.error('Ошибка загрузки:', e);
+            this.reset();
         }
     },
 
@@ -30,7 +29,6 @@ const storage = {
             const item = localStorage.getItem(`glott_${key}`);
             return item ? JSON.parse(item) : defaultValue;
         } catch (e) {
-            console.warn(`Ошибка чтения ${key}:`, e);
             return defaultValue;
         }
     },
@@ -42,27 +40,21 @@ const storage = {
             return true;
         } catch (e) {
             if (e.name === 'QuotaExceededError') {
-                if (key === 'history' && value.length > 10) {
-                    const trimmed = value.slice(-10);
-                    this.data[key] = trimmed;
-                    localStorage.setItem(`glott_${key}`, JSON.stringify(trimmed));
-                    app.showMessage('Хранилище заполнено, очищена старая история', 'warning');
+                if (key === 'history') {
+                    this.data[key] = this.data[key].slice(-20);
+                    localStorage.setItem(`glott_${key}`, JSON.stringify(this.data[key]));
                     return true;
                 }
-                app.showMessage('Хранилище переполнено. Очистите историю.', 'error');
             }
+            console.error('Ошибка сохранения:', e);
             return false;
         }
     },
 
-    addToHistory: function(input, response, type = 'chat') {
-        const cleanInput = this.sanitizeString(input);
-        const cleanResponse = this.sanitizeString(response);
-        
+    addToHistory: function(input, response) {
         const item = {
-            input: cleanInput.substring(0, 500),
-            response: cleanResponse.substring(0, 1000),
-            type: type,
+            input: String(input).substring(0, 500),
+            response: String(response).substring(0, 1000),
             time: Date.now(),
             date: new Date().toISOString()
         };
@@ -74,29 +66,25 @@ const storage = {
         this.save('history', this.data.history);
     },
 
-    sanitizeString: function(str) {
-        if (typeof str !== 'string') return '';
-        return str.replace(/[<>]/g, '');
-    },
-
     export: function() {
         try {
-            const exportData = {
-                version: '7.1',
-                exportDate: new Date().toISOString(),
+            const data = {
+                version: '7.2',
+                date: new Date().toISOString(),
                 data: this.data
             };
-
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `glott-backup-${Date.now()}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            app.showMessage('Данные экспортированы!', 'success');
+            
+            if (window.app) app.showMessage('✅ Данные экспортированы!');
         } catch (e) {
-            app.showMessage('Ошибка экспорта', 'error');
+            if (window.app) app.showMessage('❌ Ошибка экспорта');
         }
     },
 
@@ -104,62 +92,54 @@ const storage = {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json';
-
+        
         input.onchange = (e) => {
             const file = e.target.files[0];
             if (!file) return;
-
+            
             const reader = new FileReader();
             reader.onload = (event) => {
                 try {
                     const imported = JSON.parse(event.target.result);
                     
-                    if (!imported.data || typeof imported.data !== 'object') {
-                        throw new Error('Неверная структура файла');
-                    }
-
-                    const required = ['personality', 'voice', 'theme', 'history', 'notes', 'reminders', 'patterns'];
-                    const missing = required.filter(key => !(key in imported.data));
+                    if (!imported.data) throw new Error('Неверный формат файла');
                     
-                    if (missing.length > 0) {
-                        throw new Error(`Отсутствуют поля: ${missing.join(', ')}`);
-                    }
-
-                    Object.keys(imported.data).forEach(key => {
-                        if (required.includes(key)) {
+                    const keys = ['personality', 'voice', 'theme', 'history', 'notes', 'reminders'];
+                    keys.forEach(key => {
+                        if (imported.data[key] !== undefined) {
                             this.data[key] = imported.data[key];
                             localStorage.setItem(`glott_${key}`, JSON.stringify(imported.data[key]));
                         }
                     });
-
-                    app.showMessage('Данные импортированы! Перезагрузка...', 'success');
-                    setTimeout(() => location.reload(), 1000);
+                    
+                    if (window.app) {
+                        app.showMessage('✅ Данные импортированы! Перезагрузка...');
+                        setTimeout(() => location.reload(), 1000);
+                    }
                 } catch (err) {
-                    app.showMessage('Ошибка импорта: ' + err.message, 'error');
+                    if (window.app) app.showMessage('❌ Ошибка: ' + err.message);
                 }
             };
             reader.readAsText(file);
         };
-
+        
         input.click();
     },
 
     clear: function() {
-        if (!confirm('Очистить ВСЕ данные Глота? Это действие нельзя отменить.')) return;
-
-        try {
-            const keys = ['personality', 'voice', 'theme', 'history', 'notes', 'reminders', 'patterns'];
-            keys.forEach(key => localStorage.removeItem(`glott_${key}`));
-            
-            this.resetToDefaults();
-            app.showMessage('Все данные очищены!', 'success');
-            setTimeout(() => location.reload(), 1000);
-        } catch (e) {
-            app.showMessage('Ошибка очистки данных', 'error');
+        if (!confirm('Очистить ВСЕ данные? Это нельзя отменить!')) return;
+        
+        const keys = ['personality', 'voice', 'theme', 'history', 'notes', 'reminders', 'patterns'];
+        keys.forEach(key => localStorage.removeItem(`glott_${key}`));
+        
+        this.reset();
+        if (window.app) {
+            app.showMessage('🗑️ Все данные очищены!');
+            setTimeout(() => location.reload(), 500);
         }
     },
 
-    resetToDefaults: function() {
+    reset: function() {
         this.data = {
             personality: 'friend',
             voice: 'intense',
