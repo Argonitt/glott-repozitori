@@ -1,0 +1,125 @@
+/* Дополнительные стили для новых функций */
+
+/* Индикаторы сообщений */
+.message.system {
+    background: rgba(102, 126, 234, 0.3);
+    border: 1px dashed var(--primary);
+}
+
+.message.error {
+    background: rgba(245, 87, 108, 0.2);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+}
+
+.message.success {
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid var(--success);
+}
+
+.message.reminder {
+    background: rgba(255, 152, 0, 0.2);
+    border: 1px solid var(--warning);
+    animation: reminderPulse 2s infinite;
+}
+
+@keyframes reminderPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 152, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 152, 0, 0.8); }
+}
+
+/* Игровые элементы */
+.game-rules {
+    background: rgba(102, 126, 234, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.game-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.hint-text {
+    font-weight: bold;
+    min-height: 20px;
+    transition: all 0.3s;
+}
+
+.hint-text.error { color: var(--danger); }
+.hint-text.success { color: var(--success); }
+.hint-text.warning { color: var(--warning); }
+
+.game-input {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.game-input input {
+    flex: 1;
+    padding: 10px;
+    background: var(--bg-input);
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 16px;
+}
+
+.game-btn {
+    padding: 10px 20px;
+    background: var(--success);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.game-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+}
+
+.stop-game-btn {
+    width: 100%;
+    padding: 10px;
+    background: rgba(245, 87, 108, 0.2);
+    border: 1px solid var(--danger);
+    border-radius: 8px;
+    color: var(--danger);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.stop-game-btn:hover {
+    background: var(--danger);
+    color: white;
+}
+
+/* Улучшения безопасности */
+.text-input {
+    -webkit-text-security: none;
+}
+
+/* Адаптивность для маленьких экранов */
+@media (max-width: 380px) {
+    .game-stats {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .quick-actions {
+        gap: 5px;
+    }
+    
+    .quick-btn {
+        font-size: 11px;
+        padding: 5px 8px;
+    }
+}
