@@ -1,5 +1,5 @@
 // ==========================================
-// ГЛОТ v7.2 - Улучшенный ИИ для свободного общения
+// ГЛОТ v7.2 - Улучшенный ИИ с исправленным переводом
 // ==========================================
 
 const app = {
@@ -7,10 +7,9 @@ const app = {
         personality: 'friend',
         mode: 'chat',
         lastActivity: Date.now(),
-        context: [] // Контекст разговора
+        context: []
     },
 
-    // Расширенные персонажи с больше реплик
     personalities: {
         friend: {
             emoji: '🐙',
@@ -129,7 +128,6 @@ const app = {
         }
     },
 
-    // База знаний для свободного общения
     knowledge: {
         weather: {
             keywords: ['погода', 'холодно', 'жарко', 'дождь', 'снег', 'солнце', 'ветер'],
@@ -210,33 +208,34 @@ const app = {
         
         this.config.personality = storage.data.personality || 'friend';
         
-        // Применяем тему
         this.applyTheme(storage.data.theme || 'dark');
         
-        // Создаем частицы
         this.createParticles();
         
-        // Инициализация голоса
         voice.init();
         
-        // Загрузка истории
         this.loadHistory();
         
-        // Обновление UI
         this.updateUI();
         
-        // Приветствие
         setTimeout(() => {
             this.speak(this.selectGreeting());
         }, 600);
         
-        // Обработчик Enter для ввода
         document.getElementById('textInput')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.sendText();
         });
         
-        // Проверка напоминаний
         setInterval(() => this.checkReminders(), 30000);
+    },
+
+    detectLanguage: function(text) {
+        const hasCyrillic = /[а-яёА-ЯЁ]/.test(text);
+        const hasLatin = /[a-zA-Z]/.test(text);
+        
+        if (hasCyrillic) return 'ru';
+        if (hasLatin) return 'en';
+        return 'ru';
     },
 
     createParticles: function() {
@@ -266,26 +265,29 @@ const app = {
         this.speak(isLight ? 'Тёмная тема включена' : 'Светлая тема включена');
     },
 
-    // Улучшенная генерация ответа с ИИ
     generateResponse: function(text) {
         if (!text) return 'Я не расслышал, можешь повторить?';
         
         const lower = text.toLowerCase();
         const p = this.personalities[this.config.personality];
         
-        // Сначала проверяем команды
         if (lower.includes('помоги') || lower.includes('что ты умеешь')) {
             return this.getHelpText();
         }
         
-        if (lower.includes('переведи')) {
-            const toTranslate = text.replace(/переведи/gi, '').trim();
+        if (lower.includes('переведи') || lower.includes('перевод')) {
+            let toTranslate = text.replace(/переведи|перевод|на английский|на русский/gi, '').trim();
+            
             if (toTranslate) {
+                const detected = this.detectLanguage(toTranslate);
+                const direction = detected === 'ru' ? 'русский → английский' : 'английский → русский';
+                
                 setTimeout(() => this.translateText(toTranslate), 100);
-                return `🔄 Перевожу (${detected === 'ru' ? 'русский → английский' : 'английский → русский'})...`;
-
+                
+                return `🔄 Перевожу (${direction}):\n"${toTranslate.substring(0, 100)}${toTranslate.length > 100 ? '...' : ''}"`;
+            } else {
+                return 'Что перевести? Скажите:\n• "Переведи Hello world" (с английского)\n• "Переведи Привет мир" (с русского)\n\nЯ автоматически определю язык!';
             }
-            return 'Что именно перевести?';
         }
         
         if (lower.includes('играть') || lower.includes('игра') || lower.includes('давай играть')) {
@@ -308,7 +310,7 @@ const app = {
         if (lower.includes('о себе') || lower.includes('кто ты')) {
             return `Я Глот v7.2! Я умею:
 • Общаться на разные темы
-• Переводить тексты
+• Переводить с автоопределением языка
 • Играть в игры
 • Запоминать заметки
 • Устанавливать напоминания
@@ -326,22 +328,18 @@ const app = {
             return 'Остановил.';
         }
         
-        // Приветствия
         if (lower.match(/привет|здравствуй|здорово|салют/)) {
             return this.selectGreeting();
         }
         
-        // Прощания
         if (lower.match(/пока|до свидания|бай|увидимся/)) {
             return 'До встречи! Я буду ждать твоего возвращения 😉';
         }
         
-        // Спасибо
         if (lower.match(/спасибо|благодар|спс/)) {
             return 'Всегда пожалуйста! Обращайся ещё 😊';
         }
         
-        // Время и дата
         if (lower.includes('время') || lower.includes('который час')) {
             const now = new Date();
             return `Сейчас ${now.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}`;
@@ -352,22 +350,18 @@ const app = {
             return `Сегодня ${now.toLocaleDateString('ru-RU', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}`;
         }
         
-        // Совет
         if (lower.includes('совет') || lower.includes('помоги') || lower.includes('что делать')) {
             return p.advice[Math.floor(Math.random() * p.advice.length)];
         }
         
-        // Проверяем темы из knowledge base
         for (const [category, data] of Object.entries(this.knowledge)) {
             if (data.keywords.some(k => lower.includes(k))) {
                 const response = data.responses[Math.floor(Math.random() * data.responses.length)];
-                // Добавляем контекстную реплику персонажа
                 const phrase = p.phrases[Math.floor(Math.random() * p.phrases.length)];
                 return phrase + ' ' + response;
             }
         }
         
-        // Если не распознали тему - общий ответ персонажа + вопрос для продолжения диалога
         const phrases = [
             'Интересная мысль! А что ты думаешь об этом подробнее?',
             'Понимаю! Расскажи больше, мне любопытно.',
@@ -381,19 +375,20 @@ const app = {
                phrases[Math.floor(Math.random() * phrases.length)];
     },
 
-        getHelpText: function() {
+    getHelpText: function() {
         const p = this.personalities[this.config.personality];
         return `${p.emoji} Вот что я умею:
 
 🎤 Общайся со мной свободно на любые темы
-🌐 "Переведи [текст]" - перевод на английский  // ← ЗАМЕНИТЬ ЭТУ СТРОКУ
+🌐 ПЕРЕВОД (автоопределение языка):
+   • "Переведи Hello world" → на русский
+   • "Переведи Привет мир" → на английский
 🎮 "Давай играть" - игра "Угадай число"
 📝 "Запиши [текст]" - создать заметку
-⏰ "Напомни через [N] минут [что сделать]" - напоминание
+⏰ "Напомни через 10 минут [что-то]" - напоминание
 👤 "Расскажи о себе" - информация обо мне
-💡 "Совет" - мудрый совет
 
-Также можешь спросить про погоду, еду, музыку, кино - поговорим!`;
+Просто пиши или говори - я пойму!`;
     },
 
     handleInput: function(text, source = 'text') {
@@ -402,10 +397,8 @@ const app = {
         this.config.lastActivity = Date.now();
         this.addMessage(text, true);
         
-        // Проверяем игру
         if (games.current && games.handleVoice(text)) return;
         
-        // Генерируем ответ с задержкой для реализма
         setTimeout(() => {
             const response = this.generateResponse(text);
             this.speak(response);
@@ -468,7 +461,6 @@ const app = {
         return `${timeGreeting}! ${greeting}`;
     },
 
-    // Настройки
     toggleSettings: function() {
         const panel = document.getElementById('settingsPanel');
         const overlay = document.getElementById('overlay');
@@ -484,7 +476,6 @@ const app = {
     },
 
     updateSettingsUI: function() {
-        // Обновляем активные кнопки характеров
         document.querySelectorAll('.personality-btn').forEach(btn => {
             btn.classList.remove('active');
             if (btn.dataset.personality === this.config.personality) {
@@ -492,7 +483,6 @@ const app = {
             }
         });
         
-        // Обновляем активные кнопки голоса
         document.querySelectorAll('.voice-btn-settings').forEach(btn => {
             btn.classList.remove('active');
             if (btn.dataset.voice === storage.data.voice) {
@@ -505,7 +495,6 @@ const app = {
         this.config.personality = p;
         storage.save('personality', p);
         
-        // Обновляем UI
         document.querySelectorAll('.personality-btn').forEach(btn => {
             btn.classList.remove('active');
             if (btn.dataset.personality === p) btn.classList.add('active');
@@ -567,7 +556,6 @@ const app = {
         input.value = cmd;
         input.focus();
         
-        // Автоматически отправляем простые команды
         if (['помоги', 'о себе', 'анекдот', 'совет', 'погода', 'игра'].some(c => cmd.includes(c))) {
             this.sendText();
         }
@@ -592,31 +580,19 @@ const app = {
     showMessage: function(text) {
         this.addMessage(text, false);
     },
-        detectLanguage: function(text) {
-        const hasCyrillic = /[а-яёА-ЯЁ]/.test(text);
-        const hasLatin = /[a-zA-Z]/.test(text);
-        if (hasCyrillic) return 'ru';
-        if (hasLatin) return 'en';
-        return 'ru';
-    },
 
-    // Напоминания
     handleReminder: function(text) {
         const now = new Date();
         let reminderTime = null;
         let reminderText = '';
 
-        // Паттерн "через X минут/часов"
         const timeMatch = text.match(/через\s+(\d+)\s+(минут|минуту|минуты|час|часа|часов)/i);
         if (timeMatch) {
             const amount = parseInt(timeMatch[1]);
             const unit = timeMatch[2].startsWith('час') ? 'hours' : 'minutes';
             reminderTime = new Date(now.getTime() + amount * (unit === 'hours' ? 3600000 : 60000));
             reminderText = text.replace(/напомни|через\s+\d+\s+(минут|час).?/gi, '').trim();
-        }
-        
-        // Простое напоминание "через 5 минут" без текста
-        else {
+        } else {
             const simpleTime = text.match(/через\s+(\d+)\s*(мин|час)/i);
             if (simpleTime) {
                 const amount = parseInt(simpleTime[1]);
@@ -671,27 +647,36 @@ const app = {
         }
     },
 
-    // Перевод
-        translateText: async function(text) {
+    translateText: async function(text) {
         try {
-            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=ru|en`);  // ← ЗАМЕНИТЬ
+            const fromLang = this.detectLanguage(text);
+            const toLang = fromLang === 'ru' ? 'en' : 'ru';
+            
+            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`);
             const data = await response.json();
             
             if (data.responseData?.translatedText) {
-                const result = `Перевод: "${data.responseData.translatedText}"`;
+                const translated = data.responseData.translatedText;
+                const fromLangName = fromLang === 'ru' ? 'русского' : 'английского';
+                const toLangName = toLang === 'ru' ? 'русский' : 'английский';
+                
+                const result = `🔄 Перевод с ${fromLangName} на ${toLangName}:\n"${text}" → "${translated}"`;
                 this.addMessage(result, false);
-                voice.speak(`Перевод на английский: ${data.responseData.translatedText}`);  // ← ЗАМЕНИТЬ
+                voice.speak(`Перевод: ${translated}`);
+            } else {
+                this.showMessage('Не удалось перевести. Попробуйте другую фразу.');
             }
         } catch (e) {
-            this.showMessage('❌ Ошибка перевода. Попробуй позже.');
+            console.error('Ошибка перевода:', e);
+            this.showMessage('❌ Ошибка соединения с сервером перевода.');
         }
     }
-// Инициализация при загрузке
+};
+
 window.addEventListener('load', () => {
     app.init();
 });
 
-// Офлайн/онлайн
 window.addEventListener('offline', () => {
     document.getElementById('offlineIndicator')?.classList.add('show');
 });
