@@ -282,7 +282,8 @@ const app = {
             const toTranslate = text.replace(/переведи/gi, '').trim();
             if (toTranslate) {
                 setTimeout(() => this.translateText(toTranslate), 100);
-                return `Перевожу: "${toTranslate.substring(0, 50)}${toTranslate.length > 50 ? '...' : ''}"`;
+                return `🔄 Перевожу (${detected === 'ru' ? 'русский → английский' : 'английский → русский'})...`;
+
             }
             return 'Что именно перевести?';
         }
