@@ -115,46 +115,132 @@ get: function(key) {
                             this.data[key] = imported.data[key];
                             localStorage.setItem(`glott_${key}`, JSON.stringify(imported.data[key]));
                         }
-                    });
-                    
-                    if (window.app) {
-                        app.showMessage('✅ Данные импортированы! Перезагрузка...');
+// Хранилище данных — ИСПРАВЛЕННАЯ ВЕРСИЯ
+const storage = {
+    data: {
+        personality: 'friend',
+        voice: 'intense',
+        theme: 'dark',
+        userFacts: {},
+        history: [],
+        notes: [],
+        reminders: [],
+        patterns: {}
+    },
+
+    // Инициализация — загрузка из localStorage
+    init: function() {
+        this.data.personality = localStorage.getItem('glott_personality') || 'friend';
+        this.data.voice = localStorage.getItem('glott_voice') || 'intense';
+        this.data.theme = localStorage.getItem('glott_theme') || 'dark';
+        this.data.userFacts = this.parseJSON(localStorage.getItem('glott_userFacts'), {});
+        this.data.history = this.parseJSON(localStorage.getItem('glott_history'), []);
+        this.data.notes = this.parseJSON(localStorage.getItem('glott_notes'), []);
+        this.data.reminders = this.parseJSON(localStorage.getItem('glott_reminders'), []);
+        this.data.patterns = this.parseJSON(localStorage.getItem('glott_patterns'), {});
+        console.log('[Storage] Данные загружены');
+    },
+
+    // Парсер с fallback
+    parseJSON: function(str, fallback) {
+        try {
+            return str ? JSON.parse(str) : fallback;
+        } catch(e) {
+            return fallback;
+        }
+    },
+
+    // Сохранить (исправлено: не дублируем JSON для строк)
+    save: function(key, value) {
+        this.data[key] = value;
+        const toStore = typeof value === 'string' ? value : JSON.stringify(value);
+        localStorage.setItem('glott_' + key, toStore);
+    },
+
+    // Получить (всегда из this.data, который синхронизирован)
+    get: function(key) {
+        return this.data[key];
+    },
+
+    addToHistory: function(input, response, type = 'chat') {
+        const item = {
+            input: input,
+            response: response,
+            type: type,
+            time: Date.now(),
+            date: new Date().toISOString()
+        };
+        this.data.history.push(item);
+        if (this.data.history.length > 100) {
+            this.data.history = this.data.history.slice(-100);
+        }
+        this.save('history', this.data.history);
+    },
+
+    export: function() {
+        const exportData = {
+            version: '10.4.1',
+            exportDate: new Date().toISOString(),
+            data: this.data
+        };
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `glott-backup-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        if (typeof app !== 'undefined' && app.showMessage) {
+            app.showMessage('Данные экспортированы!', 'system');
+        }
+    },
+
+    import: function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    if (imported.data) {
+                        Object.keys(imported.data).forEach(key => {
+                            this.data[key] = imported.data[key];
+                            this.save(key, imported.data[key]);
+                        });
+                        if (typeof app !== 'undefined' && app.showMessage) {
+                            app.showMessage('Данные импортированы!', 'system');
+                        }
                         setTimeout(() => location.reload(), 1000);
                     }
                 } catch (err) {
-                    if (window.app) app.showMessage('❌ Ошибка: ' + err.message);
+                    if (typeof app !== 'undefined' && app.showMessage) {
+                        app.showMessage('Ошибка импорта: ' + err.message, 'error');
+                    }
                 }
             };
             reader.readAsText(file);
         };
-        
         input.click();
     },
 
     clear: function() {
-        if (!confirm('Очистить ВСЕ данные? Это нельзя отменить!')) return;
+        if (!confirm('Очистить ВСЕ данные Глота?')) return;
+        Object.keys(this.data).forEach(key => {
+            localStorage.removeItem('glott_' + key);
+        });
+        this.init(); // Сброс к дефолтам
         
-        const keys = ['personality', 'voice', 'theme', 'history', 'notes', 'reminders', 'patterns'];
-        keys.forEach(key => localStorage.removeItem(`glott_${key}`));
-        
-        this.reset();
-        if (window.app) {
-            app.showMessage('🗑️ Все данные очищены!');
-            setTimeout(() => location.reload(), 500);
+        if (typeof app !== 'undefined' && app.showMessage) {
+            app.showMessage('Все данные очищены!', 'system');
         }
-    },
-
-    reset: function() {
-        this.data = {
-            personality: 'friend',
-            voice: 'intense',
-            theme: 'dark',
-            history: [],
-            notes: [],
-            reminders: [],
-            patterns: {}
-        };
+        setTimeout(() => location.reload(), 1000);
     }
 };
 
+// Инициализируем при загрузке
 storage.init();
