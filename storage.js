@@ -33,10 +33,15 @@ const storage = {
         }
     },
 
-    save: function(key, value) {
-        try {
-            this.data[key] = value;
-            localStorage.setItem(`glott_${key}`, JSON.stringify(value));
+    // СЕЙЧАС (баг):
+save: function(key, value) {
+    this.data[key] = value;
+    localStorage.setItem('glott_' + key, JSON.stringify(value)); // ❌ Всё stringify, даже строки
+},
+
+get: function(key) {
+    return this.data[key]; // ❌ Нет чтения из localStorage при старте
+},
             return true;
         } catch (e) {
             if (e.name === 'QuotaExceededError') {
