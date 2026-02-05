@@ -83,6 +83,7 @@ const games = {
             hint.textContent = `🎉 Верно! +${score} очков`;
             hint.className = 'game-hint success';
             if (window.app) app.speak(`Правильно! Ты угадал с ${a} попытки. Набрано ${score} очков`);
+            if (window.app) app.setMode('game'); 
             setTimeout(() => this.askRestart(), 1200);
         } else if (val < t) {
             hint.textContent = `🔼 Больше! (осталось ${max - a})`;
