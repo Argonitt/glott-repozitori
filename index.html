@@ -154,14 +154,12 @@
         <!-- Управление -->
         <div class="controls">
             <!-- Режимы -->
-            <div class="mode-switcher">
-                <button class="mode-btn active" data-mode="chat" onclick="app.setMode('chat')">
-                    <span>💬</span> Чат
-                </button>
-                <button class="mode-btn" data-mode="game" onclick="app.setMode('game')">
-                    <span>🎮</span> Игра
-                </button>
-            </div>
+            <!-- Замени эти две строки: -->
+<div class="mode-tabs">
+    <button class="mode-tab active" data-mode="chat" onclick="app.setMode('chat')">💬 Чат</button>
+    <button class="mode-tab" data-mode="game" onclick="app.setMode('game')">🎮 Игра</button>
+</div>
+
 
             <!-- Быстрые действия -->
             <div class="quick-actions">
